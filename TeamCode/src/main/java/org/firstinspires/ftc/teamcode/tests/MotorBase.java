@@ -18,10 +18,11 @@ public class MotorBase extends LinearOpMode {
         souias = hardwareMap.get(DcMotor.class, "souias");
         
         waitForStart();
-        
+            
+        double babisTrigMap = ((gamepad1.right_trigger * 1) / 2) + 1;
         while(opModeIsActive()){
-            babis.setPower(gamepad1.right_stick_y / 2 - gamepad1.right_trigger / 2);
-            souias.setPower(gamepad1.left_stick_y / 2 - gamepad1.left_trigger / 2);
+            babis.setPower((gamepad1.right_stick_y / 2)  * babisTrigMap);
+            souias.setPower(gamepad1.left_stick_y / 2 * gamepad1.left_trigger / 2);
         }
     }
 }
