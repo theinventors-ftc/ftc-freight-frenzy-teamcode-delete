@@ -27,8 +27,8 @@ public class Gyro extends LinearOpMode {
             angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
             
             telemetry.addData(">", "First Angle: " + angles.firstAngle);
-            telemetry.addData(">", "First Angle: " + angles.secondAngle);
-            telemetry.addData(">", "First Angle: " + angles.thirdAngle);
+            telemetry.addData(">", "Second Angle: " + angles.secondAngle);
+            telemetry.addData(">", "Third Angle: " + angles.thirdAngle);
             telemetry.update();
         }
     }

@@ -31,7 +31,7 @@ public class DriveCorrectionWithGyro extends LinearOpMode {
     private double speed = 0;
     private double gyroValue = 0;
     private int rotations = 0;
-    private prevGyroValue = 0;
+    private double prevGyroValue = 0;
     
     private String pressed = "";
     
@@ -108,7 +108,7 @@ public class DriveCorrectionWithGyro extends LinearOpMode {
             
             telemetry.addData(">", "Robot Angle: " + gyroValue);
             telemetry.addData(">", "Robot Target: " + target);
-            telemetry.addData(">", "Error: " + (target + 180) - gyroCalc(gyroValue)));
+            telemetry.addData(">", "Error: " + ((target + 180) - gyroCalc(gyroValue)));
             // telemetry.addData(">", "Error: " + gyroValue);
             telemetry.update();
         }
