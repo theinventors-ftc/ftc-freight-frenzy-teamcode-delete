@@ -23,26 +23,32 @@ public class mechanumDriveBase extends LinearOpMode {
     private boolean gyroFollowEnabled = false;
 
     private double target = 0;
-    private double kp = 0.005;
+    private double kp = 0.1;
 
     private String dpad_pressed = "";
     private boolean modeBtn_pressed = false;
 
-    double[] calculatePowersMechanum(double xG, double yG, double rxG){
+    void assignIntakePower(boolean right_bumper, boolean left_bumper) {
+        if(right_bumper) intake.setPower(1);
+        else intake.setPower(0);
+
+        if(left_bumper) intake.setPower(-1);
+        else intake.setPower(0);
+    }
+
+
+    void assignDrivetrainPower(double xG, double yG, double rxG){
         double rx = (-rxG / 2) * (gamepad1.left_trigger + 1);
         double trig = gamepad1.right_trigger;
-        double x = ((xG * 1.1) / 2) * (1 + trig);
+        double x = -(((xG * 1.1) / 2) * (1 + trig));
         double y = (yG / 2) * (1 + trig);
 
         double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
 
-        double[] returnThePowers = new double[4];
-        returnThePowers[0] = (y + x + rx) / denominator;
-        returnThePowers[1] = (y - x + rx) / denominator;
-        returnThePowers[2] = (y - x - rx) / denominator;
-        returnThePowers[3] = (y + x - rx) / denominator;
-
-        return returnThePowers;
+        rearRight.setPower((y + x + rx) / denominator);
+        rearLeft.setPower((y - x + rx) / denominator);
+        frontRight.setPower((y - x - rx) / denominator);
+        frontLeft.setPower((y + x - rx) / denominator);
     }
 
     @Override
@@ -62,10 +68,12 @@ public class mechanumDriveBase extends LinearOpMode {
         rearRight.setDirection(DcMotorSimple.Direction.REVERSE);
 
         waitForStart();
+        double gyroValue, rot, tempMin;
+        int tempIndex, i;
+        double[] allPower, distanceFromDirections = {0, 0, 0, 0};
 
         while(opModeIsActive()) {
-            double gyroValue = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
-            double[] allPower;
+            gyroValue = - imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
 
             if(gamepad1.dpad_right) {
                 dpad_pressed = "right";
@@ -75,16 +83,12 @@ public class mechanumDriveBase extends LinearOpMode {
 
             if(dpad_pressed == "right" && !gamepad1.dpad_right) {
                 dpad_pressed = "";
-                if(target < 90  ) {
-                    target += 90;
-                }
+                target = Math.min(target+90, 90);
             }
 
 
             if(dpad_pressed == "left" && !gamepad1.dpad_left) {
-                if(target > -90) {
-                    target -= 90;
-                }
+                target = Math.max(target-90, -90);
             }
 
             if(gamepad1.right_stick_button) {
@@ -100,27 +104,35 @@ public class mechanumDriveBase extends LinearOpMode {
             }
 
             if (!gyroFollowEnabled) {
-                allPower = calculatePowersMechanum(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
-                frontLeft.setPower(allPower[0]);
-                rearLeft.setPower(allPower[1]);
-                frontRight.setPower(allPower[2]);
-                rearRight.setPower(allPower[3]);
+                rot = gamepad1.right_stick_x;
             } else {
-                double rot = (target - gyroValue) * kp;
-                allPower = calculatePowersMechanum(gamepad1.left_stick_x, gamepad1.left_stick_y, rot);
-                frontLeft.setPower(allPower[3]);
-                rearLeft.setPower(allPower[1]);
-                frontRight.setPower(allPower[2]);
-                rearRight.setPower(allPower[0]);
+                //Define the closest degrees position
+                distanceFromDirections[0] = Math.abs(180 - gyroValue);
+                distanceFromDirections[1] = Math.abs(90 - gyroValue);
+                distanceFromDirections[2] = Math.abs(- 90 - gyroValue);
+                distanceFromDirections[3] = Math.abs(- gyroValue);
+
+                tempMin = distanceFromDirections[0];
+                tempIndex = 0;
+
+                i = 0;
+                for (double dif : distanceFromDirections) {
+                    if (dif < tempMin) {
+                        tempMin = dif;
+                        tempIndex = i;
+                    }
+                    i++;
+                }
+
+                target = distanceFromDirections[tempIndex];
+                rot = (gyroValue - target) * kp;
             }
 
-            if(gamepad1.right_bumper) {
-                intake.setPower(1);
-            } else {
-                intake.setPower(0);
-            }
+            assignDrivetrainPower(gamepad1.left_stick_x, gamepad1.left_stick_y, rot);
+            assignIntakePower(gamepad1.right_bumper, gamepad1.left_bumper);
 
-            telemetry.addData(">", "Powers 3: " + (allPower[3]) + "");
+            telemetry.addData(">", "Gyro Value: " + gyroValue + "");
+            telemetry.addData(">", "Target: " + target + "");
             telemetry.update();
         }
     }
