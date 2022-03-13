@@ -28,6 +28,38 @@ public class mechanumDriveBase extends LinearOpMode {
     private String dpad_pressed = "";
     private boolean modeBtn_pressed = false;
 
+    void checkDpadPressed() {
+        if(gamepad1.dpad_right) {
+            dpad_pressed = "right";
+        } else if(gamepad1.dpad_left) {
+            dpad_pressed = "left";
+        }
+
+        if(dpad_pressed == "right" && !gamepad1.dpad_right) {
+            dpad_pressed = "";
+            target = Math.min(target+90, 90);
+        }
+
+
+        if(dpad_pressed == "left" && !gamepad1.dpad_left) {
+            target = Math.max(target-90, -90);
+        }
+    }
+
+    void checkModeBtnPressed(){
+        if(gamepad1.right_stick_button) {
+            modeBtn_pressed = true;
+        }
+        if(modeBtn_pressed && !gamepad1.right_stick_button) {
+            modeBtn_pressed = false;
+            if(gyroFollowEnabled) {
+                gyroFollowEnabled = false;
+            } else {
+                gyroFollowEnabled = true;
+            }
+        }
+    }
+
     void assignIntakePower(boolean right_bumper, boolean left_bumper) {
         if(right_bumper) intake.setPower(1);
         else intake.setPower(0);
@@ -75,33 +107,8 @@ public class mechanumDriveBase extends LinearOpMode {
         while(opModeIsActive()) {
             gyroValue = - imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
 
-            if(gamepad1.dpad_right) {
-                dpad_pressed = "right";
-            } else if(gamepad1.dpad_left) {
-                dpad_pressed = "left";
-            }
-
-            if(dpad_pressed == "right" && !gamepad1.dpad_right) {
-                dpad_pressed = "";
-                target = Math.min(target+90, 90);
-            }
-
-
-            if(dpad_pressed == "left" && !gamepad1.dpad_left) {
-                target = Math.max(target-90, -90);
-            }
-
-            if(gamepad1.right_stick_button) {
-                modeBtn_pressed = true;
-            }
-            if(modeBtn_pressed && !gamepad1.right_stick_button) {
-                modeBtn_pressed = false;
-                if(gyroFollowEnabled) {
-                    gyroFollowEnabled = false;
-                } else {
-                    gyroFollowEnabled = true;
-                }
-            }
+            checkDpadPressed();
+            checkModeBtnPressed();
 
             if (!gyroFollowEnabled) {
                 rot = gamepad1.right_stick_x;
