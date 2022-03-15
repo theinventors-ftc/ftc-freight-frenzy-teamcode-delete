@@ -18,6 +18,7 @@ public class mechanumDriveBase extends LinearOpMode {
     private DcMotor rearRight;
     private DcMotor rearLeft;
     private DcMotor intake;
+    private DcMotor carousel;
     BNO055IMU imu;
 
     private boolean gyroFollowEnabled = false;
@@ -25,8 +26,10 @@ public class mechanumDriveBase extends LinearOpMode {
     private double target = 0;
     private double kp = 0.1;
 
+    private boolean rBumperPress = false;
     private String dpad_pressed = "";
     private boolean modeBtn_pressed = false;
+    private String intakeInDuty = "stop";
 
     void checkDpadPressed() {
         if(gamepad1.dpad_right) {
@@ -61,11 +64,27 @@ public class mechanumDriveBase extends LinearOpMode {
     }
 
     void assignIntakePower(boolean right_bumper) {
-        if(gamepad2.right_bumper) intake.setPower(1);
-        else intake.setPower(0);
+        if(right_bumper) {
+            rBumperPress = true;
+        }
+
+        if(rBumperPress && !right_bumper) {
+            if(intakeInDuty == "running") {
+                intakeInDuty = "reverse";
+            } else {
+                intakeInDuty = "running";
+            }
+        }
+        if (intakeInDuty == "running") {
+            intake.setPower(1);
+        } else if(intakeInDuty == "reverse") {
+            intake.setPower(-1);
+            sleep(500);
+            intake.setPower(0);
+            intakeInDuty = "stop";
+        }
     }
 
-    void assing
 
     void assignDrivetrainPower(double xG, double yG, double rxG){
         double rx = (-rxG / 2) * (gamepad1.left_trigger + 1);
@@ -75,10 +94,10 @@ public class mechanumDriveBase extends LinearOpMode {
 
         double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
 
-        rearRight.setPower((y + x + rx) / denominator);
+        rearRight.setPower((y + x - rx) / denominator);
         rearLeft.setPower((y - x + rx) / denominator);
         frontRight.setPower((y - x - rx) / denominator);
-        frontLeft.setPower((y + x - rx) / denominator);
+        frontLeft.setPower((y + x + rx) / denominator);
     }
 
     @Override
@@ -108,37 +127,37 @@ public class mechanumDriveBase extends LinearOpMode {
             checkDpadPressed();
             checkModeBtnPressed();
 
-            if (!gyroFollowEnabled) {
-                rot = gamepad1.right_stick_x;
-            } else {
-                //Define the closest degrees position
-                distanceFromDirections[0] = Math.abs(180 - gyroValue);
-                distanceFromDirections[1] = Math.abs(90 - gyroValue);
-                distanceFromDirections[2] = Math.abs(- 90 - gyroValue);
-                distanceFromDirections[3] = Math.abs(- gyroValue);
+//            if (!gyroFollowEnabled) {
+//                rot = gamepad1.right_stick_x;
+//            } else {
+//                //Define the closest degrees position
+//                distanceFromDirections[0] = Math.abs(180 - gyroValue);
+//                distanceFromDirections[1] = Math.abs(90 - gyroValue);
+//                distanceFromDirections[2] = Math.abs(- 90 - gyroValue);
+//                distanceFromDirections[3] = Math.abs(- gyroValue);
+//
+//                tempMin = distanceFromDirections[0];
+//                tempIndex = 0;
+//
+//                i = 0;
+//                for (double dif : distanceFromDirections) {
+//                    if (dif < tempMin) {
+//                        tempMin = dif;
+//                        tempIndex = i;
+//                    }
+//                    i++;
+//                }
+//
+//                target = distanceFromDirections[tempIndex];
+//                rot = (gyroValue - target) * kp;
+//            }
 
-                tempMin = distanceFromDirections[0];
-                tempIndex = 0;
-
-                i = 0;
-                for (double dif : distanceFromDirections) {
-                    if (dif < tempMin) {
-                        tempMin = dif;
-                        tempIndex = i;
-                    }
-                    i++;
-                }
-
-                target = distanceFromDirections[tempIndex];
-                rot = (gyroValue - target) * kp;
-            }
-
-            assignDrivetrainPower(gamepad1.left_stick_x, gamepad1.left_stick_y, rot);
-            assignIntakePower(gamepad2.right_bumper);
+            assignDrivetrainPower(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
+            assignIntakePower(gamepad1.right_bumper);
 
 
-            telemetry.addData(">", "Gyro Value: " + gyroValue + "");
-            telemetry.addData(">", "Target: " + target + "");
+
+            telemetry.addData(">", "Intake: " + intakeInDuty + "");
             telemetry.update();
         }
     }
