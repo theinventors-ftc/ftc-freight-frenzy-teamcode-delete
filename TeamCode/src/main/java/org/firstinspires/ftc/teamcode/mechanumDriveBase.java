@@ -60,14 +60,12 @@ public class mechanumDriveBase extends LinearOpMode {
         }
     }
 
-    void assignIntakePower(boolean right_bumper, boolean left_bumper) {
-        if(right_bumper) intake.setPower(1);
-        else intake.setPower(0);
-
-        if(left_bumper) intake.setPower(-1);
+    void assignIntakePower(boolean right_bumper) {
+        if(gamepad2.right_bumper) intake.setPower(1);
         else intake.setPower(0);
     }
 
+    void assing
 
     void assignDrivetrainPower(double xG, double yG, double rxG){
         double rx = (-rxG / 2) * (gamepad1.left_trigger + 1);
@@ -136,7 +134,8 @@ public class mechanumDriveBase extends LinearOpMode {
             }
 
             assignDrivetrainPower(gamepad1.left_stick_x, gamepad1.left_stick_y, rot);
-            assignIntakePower(gamepad1.right_bumper, gamepad1.left_bumper);
+            assignIntakePower(gamepad2.right_bumper);
+
 
             telemetry.addData(">", "Gyro Value: " + gyroValue + "");
             telemetry.addData(">", "Target: " + target + "");
