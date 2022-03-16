@@ -1,0 +1,80 @@
+Index: TeamCode/src/main/java/org/firstinspires/ftc/teamcode/mechanumDriveBase.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package org.firstinspires.ftc.teamcode;\r\n\r\nimport com.qualcomm.hardware.bosch.BNO055IMU;\r\nimport com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;\r\nimport com.qualcomm.robotcore.eventloop.opmode.TeleOp;\r\nimport com.qualcomm.robotcore.hardware.DcMotor;\r\nimport com.qualcomm.robotcore.hardware.DcMotorSimple;\r\n\r\nimport org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;\r\nimport org.firstinspires.ftc.robotcore.external.navigation.AxesReference;\r\nimport org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;\r\n\r\n@TeleOp(name = \"Concept: MechanumBaseDrive\", group = \"Concept\")\r\n\r\npublic class mechanumDriveBase extends LinearOpMode {\r\n    private DcMotor frontLeft;\r\n    private DcMotor frontRight;\r\n    private DcMotor rearRight;\r\n    private DcMotor rearLeft;\r\n    private DcMotor intake;\r\n    BNO055IMU imu;\r\n\r\n    private boolean gyroFollowEnabled = false;\r\n\r\n    private double target = 0;\r\n    private double kp = 0.1;\r\n\r\n    private String dpad_pressed = \"\";\r\n    private boolean modeBtn_pressed = false;\r\n\r\n    void checkDpadPressed() {\r\n        if(gamepad1.dpad_right) {\r\n            dpad_pressed = \"right\";\r\n        } else if(gamepad1.dpad_left) {\r\n            dpad_pressed = \"left\";\r\n        }\r\n\r\n        if(dpad_pressed == \"right\" && !gamepad1.dpad_right) {\r\n            dpad_pressed = \"\";\r\n            target = Math.min(target+90, 90);\r\n        }\r\n\r\n\r\n        if(dpad_pressed == \"left\" && !gamepad1.dpad_left) {\r\n            target = Math.max(target-90, -90);\r\n        }\r\n    }\r\n\r\n    void checkModeBtnPressed(){\r\n        if(gamepad1.right_stick_button) {\r\n            modeBtn_pressed = true;\r\n        }\r\n        if(modeBtn_pressed && !gamepad1.right_stick_button) {\r\n            modeBtn_pressed = false;\r\n            if(gyroFollowEnabled) {\r\n                gyroFollowEnabled = false;\r\n            } else {\r\n                gyroFollowEnabled = true;\r\n            }\r\n        }\r\n    }\r\n\r\n    void assignIntakePower(boolean right_bumper, boolean left_bumper) {\r\n        if(right_bumper) intake.setPower(1);\r\n        else intake.setPower(0);\r\n\r\n        if(left_bumper) intake.setPower(-1);\r\n        else intake.setPower(0);\r\n    }\r\n\r\n\r\n    void assignDrivetrainPower(double xG, double yG, double rxG){\r\n        double rx = (-rxG / 2) * (gamepad1.left_trigger + 1);\r\n        double trig = gamepad1.right_trigger;\r\n        double x = -(((xG * 1.1) / 2) * (1 + trig));\r\n        double y = (yG / 2) * (1 + trig);\r\n\r\n        double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);\r\n\r\n        rearRight.setPower((y + x + rx) / denominator);\r\n        rearLeft.setPower((y - x + rx) / denominator);\r\n        frontRight.setPower((y - x - rx) / denominator);\r\n        frontLeft.setPower((y + x - rx) / denominator);\r\n    }\r\n\r\n    @Override\r\n    public void runOpMode() {\r\n        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();\r\n        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;\r\n        imu = hardwareMap.get(BNO055IMU.class, \"imu\");\r\n        imu.initialize(parameters);\r\n\r\n        frontLeft = hardwareMap.get(DcMotor.class, \"frontLeft\");\r\n        frontRight = hardwareMap.get(DcMotor.class, \"frontRight\");\r\n        rearRight = hardwareMap.get(DcMotor.class, \"rearRight\");\r\n        rearLeft = hardwareMap.get(DcMotor.class, \"rearLeft\");\r\n        intake = hardwareMap.get(DcMotor.class, \"intake\");\r\n\r\n        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);\r\n        rearRight.setDirection(DcMotorSimple.Direction.REVERSE);\r\n\r\n        waitForStart();\r\n        double gyroValue, rot, tempMin;\r\n        int tempIndex, i;\r\n        double[] allPower, distanceFromDirections = {0, 0, 0, 0};\r\n\r\n        while(opModeIsActive()) {\r\n            gyroValue = - imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;\r\n\r\n            checkDpadPressed();\r\n            checkModeBtnPressed();\r\n\r\n            if (!gyroFollowEnabled) {\r\n                rot = gamepad1.right_stick_x;\r\n            } else {\r\n                //Define the closest degrees position\r\n                distanceFromDirections[0] = Math.abs(180 - gyroValue);\r\n                distanceFromDirections[1] = Math.abs(90 - gyroValue);\r\n                distanceFromDirections[2] = Math.abs(- 90 - gyroValue);\r\n                distanceFromDirections[3] = Math.abs(- gyroValue);\r\n\r\n                tempMin = distanceFromDirections[0];\r\n                tempIndex = 0;\r\n\r\n                i = 0;\r\n                for (double dif : distanceFromDirections) {\r\n                    if (dif < tempMin) {\r\n                        tempMin = dif;\r\n                        tempIndex = i;\r\n                    }\r\n                    i++;\r\n                }\r\n\r\n                target = distanceFromDirections[tempIndex];\r\n                rot = (gyroValue - target) * kp;\r\n            }\r\n\r\n            assignDrivetrainPower(gamepad1.left_stick_x, gamepad1.left_stick_y, rot);\r\n            assignIntakePower(gamepad1.right_bumper, gamepad1.left_bumper);\r\n\r\n            telemetry.addData(\">\", \"Gyro Value: \" + gyroValue + \"\");\r\n            telemetry.addData(\">\", \"Target: \" + target + \"\");\r\n            telemetry.update();\r\n        }\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/mechanumDriveBase.java b/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/mechanumDriveBase.java
+--- a/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/mechanumDriveBase.java	(revision eb2b85b5f39903255fec1c388cb8571ae7c0dad1)
++++ b/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/mechanumDriveBase.java	(date 1647362729573)
+@@ -4,6 +4,7 @@
+ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+ import com.qualcomm.robotcore.hardware.DcMotor;
++import com.qualcomm.robotcore.hardware.DcMotorEx;
+ import com.qualcomm.robotcore.hardware.DcMotorSimple;
+ 
+ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+@@ -13,11 +14,11 @@
+ @TeleOp(name = "Concept: MechanumBaseDrive", group = "Concept")
+ 
+ public class mechanumDriveBase extends LinearOpMode {
+-    private DcMotor frontLeft;
+-    private DcMotor frontRight;
+-    private DcMotor rearRight;
+-    private DcMotor rearLeft;
+-    private DcMotor intake;
++    private DcMotorEx frontLeft;
++    private DcMotorEx frontRight;
++    private DcMotorEx rearRight;
++    private DcMotorEx rearLeft;
++    private DcMotorEx intake;
+     BNO055IMU imu;
+ 
+     private boolean gyroFollowEnabled = false;
+@@ -68,6 +69,10 @@
+         else intake.setPower(0);
+     }
+ 
++    void assignCarouselPower() {
++        carousel.setPower(gamepad1.dpad_up);
++    }
++
+ 
+     void assignDrivetrainPower(double xG, double yG, double rxG){
+         double rx = (-rxG / 2) * (gamepad1.left_trigger + 1);
+@@ -90,11 +95,11 @@
+         imu = hardwareMap.get(BNO055IMU.class, "imu");
+         imu.initialize(parameters);
+ 
+-        frontLeft = hardwareMap.get(DcMotor.class, "frontLeft");
+-        frontRight = hardwareMap.get(DcMotor.class, "frontRight");
+-        rearRight = hardwareMap.get(DcMotor.class, "rearRight");
+-        rearLeft = hardwareMap.get(DcMotor.class, "rearLeft");
+-        intake = hardwareMap.get(DcMotor.class, "intake");
++        frontLeft = hardwareMap.get(DcMotorEx.class, "frontLeft");
++        frontRight = hardwareMap.get(DcMotorEx.class, "frontRight");
++        rearRight = hardwareMap.get(DcMotorEx.class, "rearRight");
++        rearLeft = hardwareMap.get(DcMotorEx.class, "rearLeft");
++        intake = hardwareMap.get(DcMotorEx.class, "intake");
+ 
+         frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+         rearRight.setDirection(DcMotorSimple.Direction.REVERSE);
+@@ -105,7 +110,7 @@
+         double[] allPower, distanceFromDirections = {0, 0, 0, 0};
+ 
+         while(opModeIsActive()) {
+-            gyroValue = - imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
++
+ 
+             checkDpadPressed();
+             checkModeBtnPressed();
+@@ -137,6 +142,7 @@
+ 
+             assignDrivetrainPower(gamepad1.left_stick_x, gamepad1.left_stick_y, rot);
+             assignIntakePower(gamepad1.right_bumper, gamepad1.left_bumper);
++            assignCarouselPower();
+ 
+             telemetry.addData(">", "Gyro Value: " + gyroValue + "");
+             telemetry.addData(">", "Target: " + target + "");
