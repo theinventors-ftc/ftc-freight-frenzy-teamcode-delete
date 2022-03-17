@@ -6,6 +6,14 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+//import com.qualcomm.robotcore.hardware.
+
 
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
@@ -51,7 +59,49 @@ public class mechanumDriveBase extends LinearOpMode {
         }
     }
 
-    void checkModeBtnPressed(){
+
+        public DcMotorEx slider;
+
+        int maxTicksPosition = 2150;
+        int[] levelPositions = {5, 30, 533, 1121, 1678};
+        int levelSelected = 0;
+        String levelBtnPressed = "";
+
+        public void setSliderLevel(int level) {
+            slider.setTargetPosition(levelPositions[level + 1]);
+            telemetry.addData("Level", level);
+            telemetry.update();
+            slider.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            slider.setVelocity(2000);
+            if (level == -1) {
+                slider.setPower(-0.05);
+                sleep(300);
+                slider.setPower(0);
+                slider.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            }
+        }
+
+        public void leave_element_at_level(Button[] buttons) {
+            if (buttons[0].is_bumped()) {
+                levelBtnPressed = "a";
+                levelSelected = 1;
+            } else if (buttons[1].is_bumped()) {
+                levelBtnPressed = "x";
+                levelSelected = 2;
+            } else if (buttons[2].is_bumped()) {
+                levelBtnPressed = "y";
+                levelSelected = 3;
+            }
+            setSliderLevel(levelSelected);
+            telemetry.addData("Button pressed", levelBtnPressed);
+            telemetry.update();
+            sleep(2000);// do servo stuff
+            setSliderLevel(0);
+        }
+
+
+
+        void checkModeBtnPressed(){
         if(gamepad1.right_stick_button) {
             modeBtn_pressed = true;
         }
@@ -66,11 +116,11 @@ public class mechanumDriveBase extends LinearOpMode {
         }
     }
 
-    void assignIntakePower(boolean right_bumper) {
-        if (right_bumper)
+    void assignIntakePower() {
+        if (gamepad2.right_bumper)
             rBumperPress = true;
 
-        if(rBumperPress && !right_bumper) {
+        if(rBumperPress && !gamepad2.right_bumper) {
             rBumperPress = false;
             if (intakeInDuty == "running") {
                 intakeInDuty = "reverse";
@@ -131,6 +181,16 @@ public class mechanumDriveBase extends LinearOpMode {
         rearRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rearLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
+        slider = hardwareMap.get(DcMotorEx.class, "slider");
+        slider.setDirection(DcMotorSimple.Direction.REVERSE);
+        slider.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+
+        waitForStart();
+        Button sl_lvl_1 = new Button("slider_level_1");
+        Button sl_lvl_2 = new Button("slider_level_2");
+        Button sl_lvl_3 = new Button("slider_level_3");
+        Button[] slider_buttons = {sl_lvl_1, sl_lvl_2, sl_lvl_3};
+
         waitForStart();
         double gyroValue, rot, tempMin;
         int tempIndex, i;
@@ -169,8 +229,16 @@ public class mechanumDriveBase extends LinearOpMode {
                 rot = (target - gyroValue) * kp;
             }
 
+
+            sl_lvl_1.update(gamepad2.x);
+            sl_lvl_2.update(gamepad2.y);
+            sl_lvl_3.update(gamepad2.a);
+            leave_element_at_level(slider_buttons);
+            telemetry.addData("Encoder value", slider.getCurrentPosition());
+            telemetry.update();
+
             assignDrivetrainPower(gamepad1.left_stick_x, gamepad1.left_stick_y, rot);
-            assignIntakePower(gamepad1.right_bumper);
+            assignIntakePower();
 
             telemetry.addData(">", "Intake: " + intakeInDuty + "");
             telemetry.addData(">", "Target: " + target + "");

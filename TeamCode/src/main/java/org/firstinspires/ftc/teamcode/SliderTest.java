@@ -8,11 +8,10 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 //import com.qualcomm.robotcore.hardware.
 
-
 @TeleOp(name = "Concept: SliderTest", group = "Concept")
 
 public class SliderTest extends LinearOpMode {
-    private DcMotorEx slider;
+    public DcMotorEx slider;
 
     int maxTicksPosition = 2150;
     int[] levelPositions = {5, 30, 533, 1121, 1678};
@@ -22,8 +21,11 @@ public class SliderTest extends LinearOpMode {
     public void setSliderLevel(int level)
     {
         slider.setTargetPosition(levelPositions[level + 1]);
+        telemetry.addData("Level", level);
+        telemetry.update();
         slider.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        if (level = -1) {
+        slider.setVelocity(2000);
+        if (level == -1) {
             slider.setPower(-0.05);
             sleep(300);
             slider.setPower(0);
@@ -31,15 +33,22 @@ public class SliderTest extends LinearOpMode {
         }
     }
 
-    public void leave_element_at_level()
+    public void leave_element_at_level(Button[] buttons)
     {
-
-        if(gamepad2.a) levelSelected = 1;
-        else if(gamepad2.x) levelSelected = 2;
-        else if(gamepad2.y) levelSelected = 3;
+        if(buttons[0].is_bumped()) {
+            levelBtnPressed = "a";
+            levelSelected = 1;
+        } else if(buttons[1].is_bumped()) {
+            levelBtnPressed = "x";
+            levelSelected = 2;
+        } else if(buttons[2].is_bumped()) {
+            levelBtnPressed = "y";
+            levelSelected = 3;
+        }
         setSliderLevel(levelSelected);
-
-        // do servo stuff
+        telemetry.addData("Button pressed", levelBtnPressed);
+        telemetry.update();
+        sleep(2000);// do servo stuff
         setSliderLevel(0);
     }
 
@@ -49,23 +58,16 @@ public class SliderTest extends LinearOpMode {
         slider.setDirection(DcMotorSimple.Direction.REVERSE);
         slider.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
 
-        slider.setVelocity(2000);
-
-
         waitForStart();
-//
+        Button sl_lvl_1 = new Button("slider_level_1");
+        Button sl_lvl_2 = new Button("slider_level_2");
+        Button sl_lvl_3 = new Button("slider_level_3");
+        Button[] slider_buttons = {sl_lvl_1, sl_lvl_2, sl_lvl_3};
         while (opModeIsActive()) {
-
-
-
-         setSliderLevel(1);
-        sleep(4000);
-        setSliderLevel(2);
-        sleep(4000);
-        setSliderLevel(3);
-        sleep(4000);
-        setSliderLevel(0);
-        sleep(4000);
+            sl_lvl_1.update(gamepad1.x);
+            sl_lvl_2.update(gamepad1.y);
+            sl_lvl_3.update(gamepad1.a);
+            leave_element_at_level(slider_buttons);
             telemetry.addData("Encoder value", slider.getCurrentPosition());
             telemetry.update();
 //
