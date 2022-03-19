@@ -1,11 +1,9 @@
 package org.firstinspires.ftc.teamcode;
 
 public class Button {
-    public String name;
     public String state;
 
-    public Button(String name) {
-        this.name = name;
+    public Button() {
         this.state = "released";
     }
 
@@ -15,6 +13,10 @@ public class Button {
 
     public boolean is_bumped() {
         return this.state == "bumped";
+    }
+
+    public String get_state() {
+        return this.state;
     }
 
     public void update(boolean button_value) {

@@ -59,9 +59,9 @@ public class SliderTest extends LinearOpMode {
         slider.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
 
         waitForStart();
-        Button sl_lvl_1 = new Button("slider_level_1");
-        Button sl_lvl_2 = new Button("slider_level_2");
-        Button sl_lvl_3 = new Button("slider_level_3");
+        Button sl_lvl_1 = new Button();
+        Button sl_lvl_2 = new Button();
+        Button sl_lvl_3 = new Button();
         Button[] slider_buttons = {sl_lvl_1, sl_lvl_2, sl_lvl_3};
         while (opModeIsActive()) {
             sl_lvl_1.update(gamepad1.x);

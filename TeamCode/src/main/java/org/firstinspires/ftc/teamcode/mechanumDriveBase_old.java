@@ -6,12 +6,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.ColorSensor;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 //import com.qualcomm.robotcore.hardware.
 
 
@@ -19,9 +13,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-@TeleOp(name = "Concept: MechanumBaseDrive", group = "Concept")
+import java.util.ArrayList;
 
-public class mechanumDriveBase extends LinearOpMode {
+@TeleOp(name = "Concept: MechanumBaseDrive_old", group = "Concept")
+
+public class mechanumDriveBase_old extends LinearOpMode {
     private DcMotorEx frontLeft;
     private DcMotorEx frontRight;
     private DcMotorEx rearRight;
@@ -81,20 +77,15 @@ public class mechanumDriveBase extends LinearOpMode {
             }
         }
 
-        public void leave_element_at_level(Button[] buttons) {
-            if (buttons[0].is_bumped()) {
-                levelBtnPressed = "a";
+        public void leave_element_at_level(String btn) {
+            if(btn == "a"){
                 levelSelected = 1;
-            } else if (buttons[1].is_bumped()) {
-                levelBtnPressed = "x";
-                levelSelected = 2;
-            } else if (buttons[2].is_bumped()) {
-                levelBtnPressed = "y";
+            } else if (btn == "x") {
+                levelSelected = 3;
+            } else if (btn == "y") {
                 levelSelected = 3;
             }
             setSliderLevel(levelSelected);
-            telemetry.addData("Button pressed", levelBtnPressed);
-            telemetry.update();
             sleep(2000);// do servo stuff
             setSliderLevel(0);
         }
@@ -156,8 +147,17 @@ public class mechanumDriveBase extends LinearOpMode {
 //        frontLeft.setVelocity(MAX_RPM * TICKS_PER_REV * (y + x + rx) / (60 * denominator));
         rearRight.setVelocity((y + x - rx) / (60 * denominator));
         rearLeft.setVelocity(MAX_RPM * TICKS_PER_REV * (y - x + rx) / (60 * denominator));
+        rearLeft.setVelocity(MAX_RPM * TICKS_PER_REV * (y - x + rx) / (60 * denominator));
         frontRight.setVelocity(MAX_RPM * TICKS_PER_REV * (y - x - rx) / (60 * denominator));
         frontLeft.setVelocity(MAX_RPM * TICKS_PER_REV * (y + x + rx) / (60 * denominator));
+    }
+    boolean funcBtnPressed = false;
+    public boolean btnBumped(boolean btnValue) {
+        if(btnValue) funcBtnPressed = true;
+        if(funcBtnPressed && !btnValue) {
+            funcBtnPressed = false;
+            return true;
+        } else return false;
     }
 
     @Override
@@ -186,20 +186,33 @@ public class mechanumDriveBase extends LinearOpMode {
         slider.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
 
         waitForStart();
-        Button sl_lvl_1 = new Button("slider_level_1");
-        Button sl_lvl_2 = new Button("slider_level_2");
-        Button sl_lvl_3 = new Button("slider_level_3");
-        Button[] slider_buttons = {sl_lvl_1, sl_lvl_2, sl_lvl_3};
 
         waitForStart();
         double gyroValue, rot, tempMin;
         int tempIndex, i;
         double[] allPower, distanceFromDirections = {0, 0, 0, 0};
+        boolean modeBtn = false;
         while(opModeIsActive()) {
             gyroValue = - imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
 
             checkDpadPressed();
             checkModeBtnPressed();
+
+            if(gamepad1.right_stick_button) {
+                modeBtn = true;
+            }
+
+            if(modeBtn && !gamepad1.right_stick_button) {
+                modeBtn = false;
+                if(gyroFollowEnabled) {
+                    gyroFollowEnabled = false;
+                } else {
+                    gyroFollowEnabled = true;
+                }
+            }
+
+            telemetry.addData(">", "Mode: " + gyroFollowEnabled);
+            telemetry.update();
 
             if (!gyroFollowEnabled) {
                 rot = gamepad1.right_stick_x;
@@ -229,11 +242,21 @@ public class mechanumDriveBase extends LinearOpMode {
                 rot = (target - gyroValue) * kp;
             }
 
+//            if(gamepad2.a) {
+//                levelBtnPressed = "a";
+//            } else if(gamepad2.x) {
+//                levelBtnPressed = "x";
+//            } else if(gamepad2.y) {
+//                levelBtnPressed = "y";
+//            }
 
-            sl_lvl_1.update(gamepad2.x);
-            sl_lvl_2.update(gamepad2.y);
-            sl_lvl_3.update(gamepad2.a);
-            leave_element_at_level(slider_buttons);
+//            if(levelBtnPressed == "" && !gamepad2.a) {
+//                leave_element_at_level("a");
+//            } else if(levelBtnPressed == "" && !gamepad2.x) {
+//                leave_element_at_level("x");
+//            } else if(levelBtnPressed == "" && !gamepad2.y) {
+//                leave_element_at_level("y");
+//            }
             telemetry.addData("Encoder value", slider.getCurrentPosition());
             telemetry.update();
 
