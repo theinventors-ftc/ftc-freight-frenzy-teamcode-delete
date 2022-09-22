@@ -1,30 +1,24 @@
 package org.firstinspires.ftc.teamcode;
 
 public class Button {
-    public String state;
-
-    public Button() {
-        this.state = "released";
+    private enum State {
+        PRESSED, BUMPED, RELEASED;
     }
 
-    public boolean is_pressed() {
-        return this.state == "pressed";
+    private State state = State.RELEASED;
+
+    public Button() {}
+
+    public boolean isPressed() {
+        return state == State.PRESSED;
     }
 
-    public boolean is_bumped() {
-        return this.state == "bumped";
+    public boolean isBumped() {
+        return state == State.BUMPED;
     }
 
-    public String get_state() {
-        return this.state;
-    }
-
-    public void update(boolean button_value) {
-        if (!this.is_pressed() && button_value)
-            this.state = "pressed";
-        else if (this.is_pressed() && !button_value)
-            this.state = "bumped";
-        else if (!button_value)
-            this.state = "released";
+    public void update(boolean buttonValue) {
+        if (!isPressed() && buttonValue) state = State.PRESSED;
+        else if (!buttonValue) state = isPressed() ? State.BUMPED : State.RELEASED;
     }
 }

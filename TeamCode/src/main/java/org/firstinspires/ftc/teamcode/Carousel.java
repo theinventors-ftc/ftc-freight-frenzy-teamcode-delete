@@ -1,42 +1,42 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.hardware.CRServoImpl;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class Carousel {
-    private Button ctrl_proc;
-    private Button ctrl_run_forward;
-    private Button ctrl_run_reverse;
+    private Button ctrlProc;
+    private Button ctrlRunForward;
+    private Button ctrlRunReverse;
     private CRServoImpl servo;
-    private boolean run_proc = false;
+    private boolean runProc = false;
 
-    public Carousel(Button ctrl_proc, Button ctrl_run_forward, Button ctrl_run_reverse, CRServoImpl servo)
-    {
-        this.ctrl_proc = ctrl_proc;
-        this.ctrl_run_forward = ctrl_run_forward;
-        this.ctrl_run_reverse = ctrl_run_reverse;
-        this.servo = servo;
-        this.run_proc = false;
+    public Carousel(HardwareMap hardwareMap, ExtendedGamepad extGamepad2) {
+        this.ctrlProc = extGamepad2.b;
+        this.ctrlRunForward = extGamepad2.left_trigger_button;
+        this.ctrlRunReverse = extGamepad2.right_trigger_button;
+        this.servo = hardwareMap.get(CRServoImpl.class, "carousel");
+        this.runProc = false;
     }
 
-    private void sleep(int ms)
-    {
+    private void sleep(int ms) {
         long start = System.currentTimeMillis();
         while(System.currentTimeMillis() - start < ms) {}
     }
 
-    public void run()
-    {
-        if (ctrl_proc.is_bumped()) {
+    public void run() {
+        if (ctrlProc.isBumped()) {
             for (int i = 0; i < 10; i++) {
                 servo.setPower(1);
                 this.sleep(2000);
                 servo.setPower(0);
                 this.sleep(500);
             }
-            run_proc = true;
-        } else if (ctrl_run_forward.is_pressed()) {
+            runProc = true;
+        } else if (ctrlRunForward.isPressed()) {
             servo.setPower(1);
-        } else if (! run_proc) {
+        } else if (ctrlRunReverse.isPressed()) {
+            servo.setPower(-1);
+        }  else if (!runProc) {
             servo.setPower(0);
         }
     }

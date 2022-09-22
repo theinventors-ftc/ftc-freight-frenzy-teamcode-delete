@@ -1,110 +1,104 @@
 package org.firstinspires.ftc.teamcode;
 
-import static java.lang.Thread.sleep;
-
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 
-public class Slider
-{
-    private Button ctrl_up;
-    private Button ctrl_down;
-    private Button level_1_ctrl;
-    private Button level_2_ctrl;
-    private Button level_3_ctrl;
-    private Button intake_ctrl;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+
+public class Slider {
+    private Button ctrlUp;
+    private Button ctrlDown;
+    private Button level1Ctrl;
+    private Button level2Ctrl;
+    private Button level3Ctrl;
+    private Button intakeCtrl;
     private DcMotorEx motor;
-    private String state = "park";
-    private String intake_state = "stop";
-    private Servo bucket;
+    private Telemetry telemetry;
 
-//    private int maxTicksPosition = 2150;
-    private int[] levelPositions = {0, 200, 533, 1121, 1678};
-    private int levelSelected = 0;
-
-    private boolean run_to_level = false;
-
-    public Slider(
-            Button ctrl_up, Button ctrl_down,
-            Button level_1_ctrl, Button level_2_ctrl, Button level_3_ctrl, Button intake_ctrl,
-            DcMotorEx motor
-    )
-    {
-        this.ctrl_up = ctrl_up;
-        this.ctrl_down = ctrl_down;
-        this.level_1_ctrl = level_1_ctrl;
-        this.level_2_ctrl = level_2_ctrl;
-        this.level_3_ctrl = level_3_ctrl;
-        this.intake_ctrl = intake_ctrl;
-        this.motor = motor;
+    private enum State {
+        PARK, IN_POSITION, LEVEL1, LEVEL2, LEVEL3;
     }
 
-    public void setSliderLevel(int level)
-    {
+    private State state = State.PARK;
+
+    private int[] levelPositions = {0, 200, 533, 1121, 1678};
+    private int levelSelected = 0;
+    private boolean runToLevel = false;
+
+    public Slider(HardwareMap hardwareMap, Telemetry telemetry, ExtendedGamepad gamepad2) {
+        this.ctrlUp = gamepad2.dpad_up;
+        this.ctrlDown = gamepad2.dpad_down;
+        this.level1Ctrl = gamepad2.x;
+        this.level2Ctrl = gamepad2.y;
+        this.level3Ctrl = gamepad2.b;
+        this.intakeCtrl = gamepad2.right_bumper;
+        this.motor = hardwareMap.get(DcMotorEx.class, "slider");
+        this.motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        this.motor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        this.telemetry = telemetry;
+    }
+
+    public void setSliderLevel(int level) {
         motor.setTargetPosition(levelPositions[level + 1]);
         motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         motor.setVelocity(1600);
     }
 
-//    private void sleep(int ms)
-//    {
-//        long start = System.currentTimeMillis();
-//        while(System.currentTimeMillis() - start < ms) {}
-//    }
-
-    public void run(Intake intake, Bucket bucket)
-    {
-        if (level_1_ctrl.is_bumped()) {
+    public void run(Intake intake, Bucket bucket) {
+        if (level1Ctrl.isBumped()) {
             levelSelected = 1;
-            run_to_level = true;
-        } else if (level_2_ctrl.is_bumped()) {
+            runToLevel = true;
+        } else if (level2Ctrl.isBumped()) {
             levelSelected = 2;
-            run_to_level = true;
-        } else if (level_3_ctrl.is_bumped()) {
+            runToLevel = true;
+        } else if (level3Ctrl.isBumped()) {
             levelSelected = 3;
-            run_to_level = true;
-        } else if (intake_ctrl.is_bumped()) {
+            runToLevel = true;
+        } else if (intakeCtrl.isBumped()) {
             levelSelected = -1;
-            run_to_level = true;
+            runToLevel = true;
         }
-        if (run_to_level) {
+
+        if (runToLevel) {
             if (levelSelected == -1) {
-                if (intake.is_running()) {
-                    bucket.set_intake();
+                if (intake.isRunning()) {
+                    bucket.setIntake();
                     setSliderLevel(-1);
                 } else {
                     setSliderLevel(0);
-                    bucket.set_vertical();
-                    if (!motor.isBusy())
-                        run_to_level = false;
+                    bucket.setVertical();
+                    if (!motor.isBusy()) runToLevel = false;
                 }
             } else {
-                if (state == "park") {
+                if (state == State.PARK) {
                     setSliderLevel(levelSelected);
-                    state = "in_position";
-                } else if (state == "in_position" && (
-                        (level_1_ctrl.is_bumped() && levelSelected==1) ||
-                        (level_2_ctrl.is_bumped() && levelSelected==2) ||
-                        (level_3_ctrl.is_bumped() && levelSelected==3)
+                    state = State.IN_POSITION;
+                } else if (state == State.IN_POSITION && (
+                        (level1Ctrl.isBumped() && levelSelected == 1) ||
+                        (level2Ctrl.isBumped() && levelSelected == 2) ||
+                        (level3Ctrl.isBumped() && levelSelected == 3)
                     )
                 ) {
                     setSliderLevel(0);
                     if (!motor.isBusy()) {
-                        state = "park";
-                        run_to_level = false;
+                        state = State.PARK;
+                        runToLevel = false;
                     }
                 }
             }
-        } else if (ctrl_up.is_pressed()) {
+        } else if (ctrlUp.isPressed()) {
             motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             motor.setPower(0.5);
-        } else if (ctrl_down.is_pressed()) {
+        } else if (ctrlDown.isPressed()) {
             motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             motor.setPower(-0.5);
         } else {
             motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             motor.setPower(0);
         }
+
+        telemetry.addData("Encoder Value:", motor.getCurrentPosition());
     }
 }

@@ -1,48 +1,44 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
 public class Bucket {
     private Button toggle;
-    private double position;
     private Servo servo;
+    private double position;
 
-    public Bucket (Button toggle_bucket, Servo servo)
-    {
-        this.toggle = toggle_bucket;
-        this.servo = servo;
-        servo.setPosition(1);
-        position = 1;
+    public Bucket(HardwareMap hardwareMap, ExtendedGamepad gamepad2) {
+        this.toggle = gamepad2.a;
+        this.servo = hardwareMap.get(Servo.class, "bucket");
+        this.servo.setPosition(0.87);
+        this.position = 1;
     }
 
-    public void run()
-    {
-        if (toggle.is_bumped()) {
+    public void run() {
+        if (toggle.isBumped()) {
             if (position == 0) {
-                servo.setPosition(1);
+                servo.setPosition(0.87);
                 position = 1;
             } else {
-                servo.setPosition(0);
+                servo.setPosition(0.18);
                 position = 0;
             }
         }
     }
 
-    public void set_vertical()
-    {
-        servo.setPosition(0.5);
+    public void setVertical() {
+        servo.setPosition(0.75);
         position = 0.5;
     }
 
-    public void set_intake()
-    {
-        servo.setPosition(1);
+    public void setIntake() {
+        servo.setPosition(0.87);
         position = 1;
     }
 
-    public void set_release()
-    {
-        servo.setPosition(0);
+    public void setRelease() {
+        servo.setPosition(0.18);
         position = 0;
     }
 }
